@@ -59,4 +59,4 @@ In this branch I have introduced a few commits:
 
 - back to vanilla sequential
 - modern DataSource introduced
-- going parallel with max pool size contrained
+- going parallel with constrained max pool size
