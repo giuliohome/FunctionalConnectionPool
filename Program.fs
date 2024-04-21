@@ -11,29 +11,22 @@ let connectionString : string =
     |> Sql.formatConnectionString
 
 // construct the connection pool
-let maxConn = 5
-let pool = 
-    [|1..maxConn|]
-    |> Array.map (fun _i ->
-        let singleton = new NpgsqlConnection(connectionString)
-        singleton.Open()
-        singleton
-    )
+use dataSource = NpgsqlDataSource.Create(connectionString)
     
 
-let checkConnectionPool (singleton: NpgsqlConnection) : Task<int list> =
-    singleton
-    |> Sql.existingConnection
+let checkConnectionPool (dataSource: NpgsqlDataSource) : Task<int list> =
+    dataSource
+    |> Sql.fromDataSource
     |> Sql.query "select count(*) as conn_num from pg_stat_activity where usename='test_user';"
     |> Sql.executeAsync (fun read ->
         read.int "conn_num")
 
 
 type Distributor = { Id: int; Name: string; }
-let getDistributors (singleton: NpgsqlConnection) (myid: int): Async<Distributor list> = async {
+let getDistributors (dataSource: NpgsqlDataSource) (myid: int): Async<Distributor list> = async {
     let! res =
-        singleton
-        |> Sql.existingConnection
+        dataSource
+        |> Sql.fromDataSource
         |> Sql.query "SELECT * FROM distributors WHERE did = @id"
         |> Sql.parameters [ "@id", Sql.int myid ]
         |> Sql.executeAsync (fun read ->
@@ -43,7 +36,7 @@ let getDistributors (singleton: NpgsqlConnection) (myid: int): Async<Distributor
 
             })
         |> Async.AwaitTask
-    let! connNum = checkConnectionPool singleton |> Async.AwaitTask
+    let! connNum = checkConnectionPool dataSource |> Async.AwaitTask
     connNum
     |> List.head
     |> printfn "connections: %d" 
@@ -55,15 +48,7 @@ async {
     printfn "start"
     let tasks = 
         [|1..30|]
-        |> Array.chunkBySize maxConn
-        |> Array.map (fun chunk -> 
-            Array.map2 
-                (fun  singleton id ->
-                    getDistributors singleton id)
-                pool
-                chunk
-            |> Async.Parallel
-        )
+        |> Array.map (getDistributors dataSource)
         
     printfn "tasks ready"
     let tasks = 
@@ -73,7 +58,6 @@ async {
     
     let! tasks = tasks
     tasks
-    |> Array.concat
     |> Array.iter(
         List.iter (fun d -> 
             printfn "name : %s id %d" d.Name d.Id)
