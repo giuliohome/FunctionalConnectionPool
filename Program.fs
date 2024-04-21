@@ -10,8 +10,10 @@ let connectionString : string =
     |> Sql.port 5432
     |> Sql.formatConnectionString
 
-// construct the connection pool
-use dataSource = NpgsqlDataSource.Create(connectionString)
+let connpool : string = connectionString + ";Maximum Pool Size=15"
+printfn "Data Source from %s" connpool
+// construct the Data Source
+use dataSource = NpgsqlDataSource.Create(connpool)
     
 
 let checkConnectionPool (dataSource: NpgsqlDataSource) : Task<int list> =
@@ -53,8 +55,8 @@ async {
     printfn "tasks ready"
     let tasks = 
         tasks
-        |> Async.Sequential
-    printfn "tasks sequentiated"
+        |> Async.Parallel
+    printfn "tasks parallel"
     
     let! tasks = tasks
     tasks

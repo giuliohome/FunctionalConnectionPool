@@ -51,3 +51,12 @@ insert into distributors(did,name) values (3,'Eva');
 
 
 `exit` from the container, finally `dotnet run`
+
+
+## Use a data source
+
+In this branch I have introduced a few commits:
+
+- back to vanilla sequential
+- modern DataSource introduced
+- going parallel with max pool size contrained
