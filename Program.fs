@@ -3,7 +3,7 @@ open Npgsql.FSharp
 open Npgsql
 
 let connectionString : string =
-    Sql.host "myhome"
+    Sql.host "localhost"
     |> Sql.database "test_db"
     |> Sql.username "test_user"
     |> Sql.password "test123"
